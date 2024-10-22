@@ -2,76 +2,42 @@ name: deploy_function_apps
 on:
     workflow_dispatch
 
+env:
+  AZURE_FUNCTIONAPP_NAME: 'GitHub'   # set this to your function app name on Azure
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'       # set this to the path to your function app project, defaults to the repository root
+  PYTHON_VERSION: '3.12'                     # set this to the python version to use (e.g. '3.6', '3.7', '3.8')
 
 jobs:
-
-  create-publishing-credentials:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
+    environment: dev
     steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v3
 
-      - name: Set up GitHub CLI
-        run: |
-          sudo apt-get install gh
+    - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Authenticate with GitHub CLI
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+    - name: 'Resolve Project Dependencies Using Pip'
+      shell: bash
+      run: |
+        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+        popd
 
-      - name: 'Az CLI login'
+# Please note that to get a publish profile via Azure you have to ensure that SCM Basic Auth Publishing Credentials is enabled before you download the publish profile. This can be done via settings / configuration / general settings. 
 
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: 'Run Azure Functions Action'
+      uses: Azure/functions-action@v1
+      id: fa
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+        scm-do-build-during-deployment: true
+        enable-oryx-build: true
 
-      - name: 'Get publishing profile'
-        run: |
-
-          publishprofile=$(az webapp deployment list-publishing-credentials --name poihhjkasmnhg --resource-group garethsbx --subscription a225e1f7-8f65-4153-9d92-826bfc0c8f0c)
-
-          gh secret set AZURE_FUNCTIONAPP_PUBLISH_PROFILE --body "$publishprofile" --repo smartg01/AzureFunctionApp
-
-
-
-
-#   build-and-deploy-function-app:
-#     runs-on: ubuntu-latest
-#     steps:
-#     env:
-#       AZURE_FUNCTIONAPP_NAME: 'GitHub'   # set this to your function app name on Azure
-#       AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'       # set this to the path to your function app project, defaults to the repository root
-#       PYTHON_VERSION: '3.12'      
-#     - name: 'Checkout GitHub Action'
-#       uses: actions/checkout@v3
-
-#     - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
-#       uses: actions/setup-python@v4
-#       with:
-#         python-version: ${{ env.PYTHON_VERSION }}
-
-#     - name: 'Resolve Project Dependencies Using Pip'
-#       shell: bash
-#       run: |
-#         pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-#         python -m pip install --upgrade pip
-#         pip install -r requirements.txt --target=".python_packages/lib/site-packages"
-#         popd
-
-# # Please note that to get a publish profile via Azure you have to ensure that SCM Basic Auth Publishing Credentials is enabled before you download the publish profile. This can be done via settings / configuration / general settings. 
-
-#     - name: 'Run Azure Functions Action'
-#       uses: Azure/functions-action@v1
-#       id: fa
-#       with:
-#         app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-#         package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-#         publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-#         scm-do-build-during-deployment: true
-#         enable-oryx-build: true
-
-# # For more samples to get started with GitHub Action workflows to deploy to Azure, refer to https://github.com/Azure/actions-workflow-samples
+# For more samples to get started with GitHub Action workflows to deploy to Azure, refer to https://github.com/Azure/actions-workflow-samples
