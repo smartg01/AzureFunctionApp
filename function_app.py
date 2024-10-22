@@ -4,7 +4,7 @@ import logging
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 @app.route(route="http_triggerv1")
-def github_test_v1(req: func.HttpRequest) -> func.HttpResponse:
+def github_testv1(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     name = req.params.get('name')
