@@ -27,9 +27,8 @@ jobs:
         run: |
 
           publishprofile=$(az webapp deployment list-publishing-credentials --name poihhjkasmnhg --resource-group garethsbx --subscription a225e1f7-8f65-4153-9d92-826bfc0c8f0c)
-          echo $publishprofile
 
-          gh secret set AZURE_FUNCTIONAPP_PUBLISH_PROFILE--body $publishprofile --repo smartg01/AzureFunctionApp
+          gh secret set AZURE_FUNCTIONAPP_PUBLISH_PROFILE--body "test" --repo smartg01/AzureFunctionApp
 
 
 
