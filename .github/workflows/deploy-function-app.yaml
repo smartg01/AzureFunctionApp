@@ -2,15 +2,14 @@ name: deploy_function_apps
 on:
     workflow_dispatch
 
-permissions:
-  id-token: write
-  contents: read
 
 jobs:
 
   create-publishing-credentials:
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
 
@@ -23,6 +22,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
       - name: 'Az CLI login'
+
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
